@@ -1,0 +1,70 @@
+---
+- name: Deploy Python App with Docker
+  hosts: localhost
+  become: yes
+  tasks:
+
+    - name: Install required packages
+      yum:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - python3-pip
+        - docker
+        - git
+
+    - name: Ensure Docker service is running
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Create build directory
+      file:
+        path: /opt/simple_app/build
+        state: directory
+        mode: '0755'
+        owner: ec2-user
+        group: ec2-user
+
+    - name: Copy app.py
+      copy:
+        src: /home/ec2-user/Ansible-Automation-On-AWS/simple-python-ansible/app.py
+        dest: /opt/simple_app/build/app.py
+        owner: ec2-user
+        group: ec2-user
+        mode: '0644'
+
+    - name: Copy requirements.txt
+      copy:
+        src: /home/ec2-user/Ansible-Automation-On-AWS/simple-python-ansible/requirements.txt
+        dest: /opt/simple_app/build/requirements.txt
+        owner: ec2-user
+        group: ec2-user
+        mode: '0644'
+
+    - name: Copy Dockerfile
+      copy:
+        src: /home/ec2-user/Ansible-Automation-On-AWS/simple-python-ansible/Dockerfile
+        dest: /opt/simple_app/build/Dockerfile
+        owner: ec2-user
+        group: ec2-user
+        mode: '0644'
+
+    - name: Build Docker image
+      community.docker.docker_image:
+        name: simple-python-app
+        tag: latest
+        source: build
+        build:
+          path: /opt/simple_app/build
+          dockerfile: Dockerfile
+
+    - name: Run Docker container
+      community.docker.docker_container:
+        name: simple-python-app
+        image: simple-python-app:latest
+        state: started
+        restart_policy: always
+        published_ports:
+          - 5000:5000
