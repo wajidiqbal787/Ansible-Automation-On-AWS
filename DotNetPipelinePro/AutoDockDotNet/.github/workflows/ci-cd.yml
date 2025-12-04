@@ -1,0 +1,40 @@
+name: SimpleDotNet CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup .NET 7
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 7.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore SimpleDotNetAPI/SimpleDotNetAPI.csproj
+
+    - name: Build project
+      run: dotnet build SimpleDotNetAPI/SimpleDotNetAPI.csproj --configuration Release
+
+    - name: Publish output
+      run: dotnet publish SimpleDotNetAPI/SimpleDotNetAPI.csproj -c Release -o out
+
+    - name: Build Docker image
+      run: docker build -t simple-dotnet-api:latest SimpleDotNetAPI
+
+    - name: Deploy using Ansible over SSH
+      uses: appleboy/ssh-action@v1
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ec2-user
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          cd /home/ec2-user/Ansible-Automation-On-AWS/SimpleDotNetApp/SimpleDotNetAPI/ansible
+          ansible-playbook -i hosts.ini deploy-dotnet.yml
