@@ -1,0 +1,59 @@
+name: CI/CD Node.js App Deployment
+
+on:
+  push:
+    branches:
+      - main  # ya jis branch pe aap kaam karte hain
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v3
+
+    - name: Setup Python for Ansible
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.x
+
+    - name: Install Ansible
+      run: |
+        python -m pip install --upgrade pip
+        pip install ansible boto3
+
+    - name: Copy SSH Key
+      uses: webfactory/ssh-agent@v0.7.0
+      with:
+        ssh-private-key: -----BEGIN RSA PRIVATE KEY-----
+MIIEpQIBAAKCAQEAobC6expnR/2AxceuASLVUM55+4H12MTmGIkgO3/xflwF2/fw
+Hp3ErNsprWVi9HHyln8Dcjo0/+B0wrLc5sRUaiWsLUEX0lnX29A6+pQ9ob1yaf1d
+rqn+vOMzaLz4zcGmztZwVbiO5xt/At2/zEMoHioj8LSKjRe8qf8rVrcjGT8hrN/g
+jaRQ4Wodi8N6cvJ7xiLcutacXg9TWVX7SF5N8fdCeTElMivj4Zk9H5rJCCXcKEOl
+wUYABKMpyK4K2StmgiUJ9CL4UcsQyMWgnHde8W0AraPCpzVSPOfkdMiIbPecu1fy
+oXelBkiKsGF7MS/MomB/maGVQH/IlGI17OD+mwIDAQABAoIBAAjAQueEv1BDJSQP
+MZi4JOlxs2JsXzzzMyzixw7RVuWq31pPafyON2XPmsrasOdf/2wrxaj6A4JRyJ/9
+BD2tJJB2J4JvgnWNDUTFWVvUiB1n3nhkERzx8GqStWaWy7R/JaMOMhhBm+JgN5iV
+HdtVSyeOylEtxE3smfZtbBAOa2TjUsxfXPDd/6XhHnKeuvGlDFKqK2laWRHeswgc
+ghArvzAkCQv7aMFFxwYyftmQ0EbMcTDpcWN7lVLOsI1LRDsP5xHvz4e0tWPzpNXQ
+cnGWdjJdju7tHlPkg0lB72coTrDoO6kN5qwozgE6wIe5ZXvk3ZhsaPz3IML26a/4
+iGrnZukCgYEA0QFnzboPjsSNgUexuF8dSbvsmtSir5e2BKGz586w/X3PEzSnX5Tk
+E+vLpZyVzoXAgqe0BMYXmxYqPbPfgFq+ub5tl/hmPffRU46SC6/40eHriclfUhvb
+gTKwkDL62rHF5QksBFrKi65+v0hZs9GK33lOdqA4GJ/xD4yGY/XiqWUCgYEAxgvP
+Kh85NHHTtZ4hFySmW2qHOxPDA8hQb+5NQmlOqy8kj/qr7daMSKLpA7IZ2R71/IRX
+KtaXWUiLTPCEPIXGz2tidpCvus8cZd04r/yGEpgl7Ti08KbcSyyggrruh1HBA3Uk
+8xt7XAdngujdnUaAqO95uApdTyat/8TwEqxOh/8CgYEAlwBx88Oqe9Zr+exHbVJi
+waPhRNe9limA2wXNCfxeCTb9Bf4zsq3Kvs3MOyHPZf9iX8M0H4LTCTxRVnT/VCe7
+xkzbt0FC9SB3fuvxfjosBc84sjroAFWaGFT8FaKPdLOdq2UeBSNnVNXEQwTNskoB
+EIX+91u4S6o6qqY3bj72/LUCgYEAuOdlsCoeurxbsYHF21m4iDlZsOqudOWdVCPl
+tk+jx2fodxTPWOurZlXTwEOUpoalm/HjgHeCLzXv+RHGJMux5w6Xi6NirsOX+/Mj
+bgwTEWFEZ8s+BEGGBBnScrwc3/KQhq3kpaXO8wlmt267GpAsp42O0ym6HKA8bERu
+8MA3QfkCgYEAmVwwlZJCD9O0mfNJjbTERalTAXYOJ+uhatMuHe5lieIUhJCtVugA
+AnUruMj2Wa/urFlEMrcmyv+kY4mswLTrXiol2+1rvZSvHKw6ataDDtm464uy5dLL
+iBqRZCbqm4vTqrcckfByvc4uL8ODJJfUt9B8jsfI25XiAOdzYHHpe1k=
+-----END RSA PRIVATE KEY-----
+
+    - name: Run Ansible Playbook
+      run: |
+        ansible-playbook -i ansible-nodejs/hosts.ini ansible-nodejs/playbook.yml

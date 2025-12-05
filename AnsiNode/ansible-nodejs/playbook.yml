@@ -1,0 +1,72 @@
+---
+- name: Deploy Node.js App with Docker
+  hosts: localhost
+  become: yes
+  vars:
+    nodejs_app_path: "/home/ec2-user/Ansible-Automation-On-AWS/nodejs-ansible-cicd"
+    nodejs_image_name: "nodejs-app"
+    nodejs_container_name: "nodejs-app"
+    nodejs_port: 3000
+
+  tasks:
+
+    # Ensure Docker is installed
+    - name: Ensure Docker is installed
+      ansible.builtin.yum:
+        name: docker
+        state: present
+
+    # Start Docker service
+    - name: Start Docker service
+      ansible.builtin.service:
+        name: docker
+        state: started
+
+    # Add ec2-user to docker group
+    - name: Add ec2-user to docker group
+      ansible.builtin.user:
+        name: ec2-user
+        groups: docker
+        append: yes
+
+    # Stop any container using port 3000 (ignore errors if none exists)
+    - name: Stop any container using port 3000 (ignore errors if not running)
+      ansible.builtin.shell: |
+        docker ps -q --filter "publish={{ nodejs_port }}" | xargs -r docker stop
+      ignore_errors: yes
+
+    # Remove existing nodejs-app container (ignore if not exists)
+    - name: Remove existing nodejs-app container (ignore if not exists)
+      community.docker.docker_container:
+        name: "{{ nodejs_container_name }}"
+        state: absent
+        force_kill: yes
+      ignore_errors: yes
+
+    # Build Node.js Docker image
+    - name: Build Node.js Docker image
+      community.docker.docker_image:
+        name: "{{ nodejs_image_name }}"
+        build:
+          path: "{{ nodejs_app_path }}"
+        source: build
+        state: present
+
+    # Run Node.js container
+    - name: Run Node.js container
+      community.docker.docker_container:
+        name: "{{ nodejs_container_name }}"
+        image: "{{ nodejs_image_name }}"
+        state: started
+        restart_policy: always
+        ports:
+          - "{{ nodejs_port }}:3000"
+
+    # Verify the container is running
+    - name: Check Node.js container status
+      ansible.builtin.shell: docker ps --filter "name={{ nodejs_container_name }}"
+      register: result
+
+    - name: Display Node.js container status
+      ansible.builtin.debug:
+        var: result.stdout
